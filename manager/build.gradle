@@ -14,7 +14,7 @@ plugins {
 android {
     namespace = "moe.shizuku.manager"
     defaultConfig {
-        applicationId = "com.siddaemon"
+        applicationId = "moe.shizuku.privileged.api"
         versionCode = rootProject.ext.versionCode
         versionName = rootProject.ext.versionName
         externalNativeBuild {
