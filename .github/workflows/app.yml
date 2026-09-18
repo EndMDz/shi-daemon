@@ -45,21 +45,52 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Validate Signing Config
+      - name: Prepare AOSP testkey
+        if: ${{ !inputs.debug }}
         run: |
-          if [ "${{ inputs.debug }}" = "false" ] && [ "$KEYSTORE" = "" ]; then
-            echo "::error::Signing secrets not configured. Signing secrets are required for release builds."
-            exit 1
-          fi
+          set -e
 
-      - name: Create signing.properties
-        if: ${{ !inputs.debug && env.KEYSTORE != '' }}
-        run: |
-          echo KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }} > signing.properties
-          echo KEYSTORE_ALIAS=${{ secrets.KEYSTORE_ALIAS }} >> signing.properties
-          echo KEYSTORE_ALIAS_PASSWORD='${{ secrets.KEYSTORE_ALIAS_PASSWORD }}' >> signing.properties
-          echo KEYSTORE_FILE=../key.jks >> signing.properties
-          echo ${{ secrets.KEYSTORE }} | base64 --decode > key.jks
+          SECURITY_BASE="https://android.googlesource.com/platform/build/+/refs/heads/master/target/product/security"
+
+          curl -fsSL "$SECURITY_BASE/testkey.pk8?format=TEXT" \
+            | base64 -d > testkey.pk8
+
+          curl -fsSL "$SECURITY_BASE/testkey.x509.pem?format=TEXT" \
+            | base64 -d > testkey.x509.pem
+
+          # AOSP testkey.pk8 -> PEM
+          openssl pkcs8 \
+            -inform DER \
+            -nocrypt \
+            -in testkey.pk8 \
+            -out testkey.pem
+
+          # PEM + certificado -> PKCS#12
+          openssl pkcs12 \
+            -export \
+            -in testkey.x509.pem \
+            -inkey testkey.pem \
+            -out testkey.p12 \
+            -password pass:android \
+            -name AndroidDebugKey
+
+          # PKCS#12 -> JKS
+          keytool -importkeystore \
+            -deststorepass android \
+            -destkeystore key.jks \
+            -srckeystore testkey.p12 \
+            -srcstoretype PKCS12 \
+            -srcstorepass android \
+            -noprompt
+
+          cat > signing.properties <<'EOF'
+          KEYSTORE_PASSWORD=android
+          KEYSTORE_ALIAS=AndroidDebugKey
+          KEYSTORE_ALIAS_PASSWORD=android
+          KEYSTORE_FILE=../key.jks
+          EOF
+
+          echo "AOSP testkey keystore prepared."
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
