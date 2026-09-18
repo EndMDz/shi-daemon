@@ -46,7 +46,7 @@ object ShizukuReceiverStarter {
             && ShizukuSettings.getLastLaunchMode() == LaunchMethod.ADB) {
                 if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
                     AdbStartWorker.enqueue(context)
-                    updateNotification(context, WorkerState.AWAITING_WIFI)
+                    // updateNotification(context, WorkerState.AWAITING_WIFI)
                 } else {
                     showPermissionErrorNotification(context)
                 }
