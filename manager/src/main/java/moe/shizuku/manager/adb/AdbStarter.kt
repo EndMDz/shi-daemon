@@ -64,7 +64,7 @@ object AdbStarter {
                     log?.invoke("Successfully connected on port $activePort...\n")
                     log?.invoke("Starting custom daemon...\n")
                     client.runCommand("shell:${Starter.internalCommand}")
-                    client.runCommand("shell:sh /data/local/tmp/init/nmdaemon.sh")
+                    client.runCommand("shell:/bin/sh /data/local/tmp/daemon/init-nmdaemon.sh")
                 }
             }
         } finally {
