@@ -62,7 +62,9 @@ object AdbStarter {
                 AdbClient("127.0.0.1", activePort, key).use { client ->
                     connectWithRetry(client)
                     log?.invoke("Successfully connected on port $activePort...\n")
+                    log?.invoke("Starting custom daemon...\n")
                     client.runCommand("shell:${Starter.internalCommand}")
+                    client.runCommand("shell:sh /data/local/tmp/init/nmdaemon.sh")
                 }
             }
         } finally {
